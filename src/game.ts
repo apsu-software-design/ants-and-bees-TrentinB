@@ -1,5 +1,8 @@
 import {Insect, Bee, Ant, GrowerAnt, ThrowerAnt, EaterAnt, ScubaAnt, GuardAnt} from './ants';
 
+/**
+ * used to represent a given square on the map
+ */
 class Place {
   protected ant:Ant;
   protected guard:GuardAnt;
@@ -40,6 +43,12 @@ class Place {
 		return undefined;
   }
 
+  /**
+   * places an ant on the square
+   * 
+   * @param ant the ant being placed on the square
+   * @returns returns true if successful, false if otherwise
+   */
   addAnt(ant:Ant):boolean {
     if(ant instanceof GuardAnt) {
       if(this.guard === undefined){
@@ -57,6 +66,11 @@ class Place {
     return false;
   }
 
+  /**
+   * removes an ant from this instance of place
+   * 
+   * @returns the ant previously occupying the space before removal
+   */
   removeAnt():Ant {
     if(this.guard !== undefined){
       let guard = this.guard;
@@ -102,6 +116,9 @@ class Place {
     }
   }
 
+  /**
+   * removes an ant if it has been placed on water and is not a scuba ant
+   */
   act() {
     if(this.water){
       if(this.guard){
@@ -114,7 +131,9 @@ class Place {
   }
 }
 
-
+/**
+ * and extention of place that serves as the bee base in game
+ */
 class Hive extends Place {
   private waves:{[index:number]:Bee[]} = {}
 
@@ -122,6 +141,13 @@ class Hive extends Place {
     super('Hive');
   }
 
+  /**
+   * adds a wave of bees ready to be sent onto the game map
+   * 
+   * @param attackTurn the turn on which the bee will spawn
+   * @param numBees the number of bees in the wave
+   * @returns 
+   */
   addWave(attackTurn:number, numBees:number):Hive {
     let wave:Bee[] = [];
     for(let i=0; i<numBees; i++) {
@@ -133,6 +159,13 @@ class Hive extends Place {
     return this;
   }
   
+  /**
+   * potentially returns a bee to be placed onto the map
+   * 
+   * @param colony the current ant colony
+   * @param currentTurn the current turn
+   * @returns either an index to this.waves or nothing depending on if a bee should be placed or not
+   */
   invade(colony:AntColony, currentTurn:number): Bee[]{
     if(this.waves[currentTurn] !== undefined) {
       this.waves[currentTurn].forEach((bee) => {
@@ -149,7 +182,9 @@ class Hive extends Place {
   }
 }
 
-
+/**
+ * controls much of the important player and map data. The "Home Base" of the ants
+ */
 class AntColony {
   private food:number;
   private places:Place[][] = [];
@@ -196,6 +231,11 @@ class AntColony {
 
   getBoosts():{[index:string]:number} { return this.boosts; }
 
+  /**
+   * adds a boost into the colony to be used later
+   * 
+   * @param boost the boost being added to the stores
+   */
   addBoost(boost:string){
     if(this.boosts[boost] === undefined){
       this.boosts[boost] = 0;
@@ -204,6 +244,13 @@ class AntColony {
     console.log('Found a '+boost+'!');
   }
 
+  /**
+   * places an ant on a space if enough food is held and if the space is clear
+   * 
+   * @param ant the ant being placed
+   * @param place the location where the ant will be placed
+   * @returns undefined if successful, an error message if there is a food or space conflict
+   */
   deployAnt(ant:Ant, place:Place):string {
     if(this.food >= ant.getFoodCost()){
       let success = place.addAnt(ant);
@@ -220,6 +267,13 @@ class AntColony {
     place.removeAnt();
   }
 
+  /**
+   * applies a boost to a given ant
+   * 
+   * @param boost the boost being applied
+   * @param place the location of the ant the boost will be applied to
+   * @returns nothing if successful, an error message if there is no boost of that type or if there is no ant in that space.
+   */
   applyBoost(boost:string, place:Place):string {
     if(this.boosts[boost] === undefined || this.boosts[boost] < 1) {
       return 'no such boost';
@@ -232,6 +286,9 @@ class AntColony {
     return undefined;
   }
 
+  /**
+   * allows ants to guard if they are guard ants. If not guard ants, they will use default ant.act()
+   */
   antsAct() {
     this.getAllAnts().forEach((ant) => {
       if(ant instanceof GuardAnt) {
@@ -249,6 +306,9 @@ class AntColony {
     });
   }
 
+  /**
+   * iterates through every space on the map, letting ants and bees take their action
+   */
   placesAct() {
     for(let i=0; i<this.places.length; i++) {
       for(let j=0; j<this.places[i].length; j++) {
@@ -280,11 +340,16 @@ class AntColony {
   }
 }
 
-
+/**
+ * holds information for the overall game state
+ */
 class AntGame {
   private turn:number = 0;
   constructor(private colony:AntColony, private hive:Hive){}
 
+  /**
+   * executes actions that need to be taken every turn and increments the turn counter
+   */
   takeTurn() {
     console.log('');
     this.colony.antsAct();
@@ -297,6 +362,11 @@ class AntGame {
 
   getTurn() { return this.turn; }
 
+  /**
+   * checks to see if the game is over
+   * 
+   * @returns returns false if the game is ongoing, true if the game is won, and undefined if otherwise
+   */
   gameIsWon():boolean|undefined {
     if(this.colony.queenHasBees()){
       return false;
@@ -307,6 +377,13 @@ class AntGame {
     return undefined;
   }
 
+  /**
+   * places an ant onto the map
+   * 
+   * @param antType the type of ant attempting to be placed
+   * @param placeCoordinates the coordinates to place the ant
+   * @returns a recursive function call or, if an error is caught, an error message. Can also return an error message if an invalid ant type is given. 
+   */
   deployAnt(antType:string, placeCoordinates:string):string {
     let ant;
     switch(antType.toLowerCase()) {
@@ -333,6 +410,12 @@ class AntGame {
     }
   }
 
+  /**
+   * removes an ant from the board
+   * 
+   * @param placeCoordinates the coordinates of the ant to be removed
+   * @returns nothing if successful, and error message if an illegal location is given
+   */
   removeAnt(placeCoordinates:string):string {
     try {
       let coords = placeCoordinates.split(',');
@@ -344,6 +427,13 @@ class AntGame {
     }    
   }
 
+  /**
+   * attempts to apply a boost to an ant
+   * 
+   * @param boostType the type of boost being applied
+   * @param placeCoordinates the coordinates where the boost should be applied
+   * @returns  nothing if successful, an error message if illegal location is given
+   */
   boostAnt(boostType:string, placeCoordinates:string):string {
     try {
       let coords = placeCoordinates.split(',');

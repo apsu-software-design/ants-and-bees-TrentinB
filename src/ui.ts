@@ -14,15 +14,23 @@ export function showMapOf(game:AntGame){
   console.log(getMap(game));
 }
 
+/**
+ * generates a game map with various colors for command line text
+ * 
+ * @param game the game which provides crucial information for the game map
+ * @returns returns the final map in the form of a single string
+ */
 function getMap(game:AntGame) {
   let places:Place[][] = game.getPlaces();
   let tunnelLength = places[0].length;
+  //chalk.bgYellow.black() provides color for command line letters
   let beeIcon = chalk.bgYellow.black('B');
    
   let map = '';
-
+  //chalk.bold() boldens command line text
   map += chalk.bold('The Colony is under attack!\n');
   map += `Turn: ${game.getTurn()}, Food: ${game.getFood()}, Boosts available: [${game.getBoostNames()}]\n`;
+  //_.range(0,tunnelLength) creates a range on ints between 0 and the length of the tunnel
   map += '     '+_.range(0,tunnelLength).join('    ')+'      Hive'+'\n';
    
   for(let i=0; i<places.length; i++){
@@ -70,7 +78,12 @@ function getMap(game:AntGame) {
   return map;
 }
 
-
+/**
+ * provides the icons used to display the different ant types
+ * 
+ * @param ant the ant being displayed
+ * @returns the correct icon for the conditional ant
+ */
 function iconFor(ant:Ant){
   if(ant === undefined){ return ' ' };
   let icon:string;
@@ -100,24 +113,37 @@ function iconFor(ant:Ant){
   return icon;
 }
 
-
+/**
+ * controls player input, displaying the game and then allowing them to make their move
+ * 
+ * @param game the current game state
+ */
 export function play(game:AntGame) {
   Vorpal
+    //lets user know the game is accepting input
     .delimiter(chalk.green('AvB $'))
+    //sends the game map to stdout
     .log(getMap(game))
+    //takes the stdout to display 'AvB $'
     .show();
 
   Vorpal
+    //adds a "show" command to show the current gameboard
     .command('show', 'Shows the current game board.')
+    //provides the action to the new 'show' command
     .action(function(args, callback){
       Vorpal.log(getMap(game));
       callback();
     });
 
   Vorpal
+    //adds a new command 'deploy'
     .command('deploy <antType> <tunnel>', 'Deploys an ant to tunnel (as "row,col" eg. "0,6").')
+    //allows 'd' to execute the add command
     .alias('add', 'd')
+    //creates an autocomplete which can fill in a partially typed command
     .autocomplete(['Grower','Thrower','Eater','Scuba','Guard'])
+    //execution code to the new 'deploy' command
     .action(function(args, callback) {
       let error = game.deployAnt(args.antType, args.tunnel)
       if(error){
@@ -130,8 +156,11 @@ export function play(game:AntGame) {
     });
 
   Vorpal
+    //adds new remove command
     .command('remove <tunnel>', 'Removes the ant from the tunnel (as "row,col" eg. "0,6").')
+    //allows 'rm' to also execute this command
     .alias('rm')
+    //execution code of the remove command
     .action(function(args, callback){
       let error = game.removeAnt(args.tunnel);
       if(error){
@@ -144,9 +173,13 @@ export function play(game:AntGame) {
     });
 
   Vorpal
+    //adds a new boost command
     .command('boost <boost> <tunnel>', 'Applies a boost to the ant in a tunnel (as "row,col" eg. "0,6")')
+    //allows 'b' to also execute this command
     .alias('b')
+    //allows for autcompletion towards this command while typing
     .autocomplete({data:() => game.getBoostNames()})
+    //execution code for the new boost command
     .action(function(args, callback){
       let error = game.boostAnt(args.boost, args.tunnel);
       if(error){
@@ -156,8 +189,11 @@ export function play(game:AntGame) {
     })
 
   Vorpal
+    //adds a new turn command
     .command('turn', 'Ends the current turn. Ants and bees will act.')
+    //allows for three new ways to call this command: 'end turn', 'take turn', and 't'
     .alias('end turn', 'take turn','t')
+    //execution code for this new command
     .action(function(args, callback){
       game.takeTurn();
       Vorpal.log(getMap(game));
